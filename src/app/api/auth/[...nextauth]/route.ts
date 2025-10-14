@@ -2,6 +2,9 @@ import NextAuth, { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import prisma from "@/lib/client";
 import bcrypt from "bcrypt";
+import { User } from "@/app/_generated/prisma";
+import { JWT } from "next-auth/jwt";
+import { AdapterUser } from "next-auth/adapters";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -18,7 +21,7 @@ export const authOptions: NextAuthOptions = {
       },
       /* Function below captures the credentials from the fields defined above and checks if they are valid.
        * If not, return null -> this will show an error on the log-in page. If valid, return a user object. */
-      async authorize(credentials, req) {
+      async authorize(credentials, req): Promise<User | null> {
         if (!credentials?.email || !credentials?.password) {
           return null;
         }
@@ -40,6 +43,26 @@ export const authOptions: NextAuthOptions = {
   // This defines that we use a JWT instead of a database to capture session data
   session: {
     strategy: "jwt",
+  },
+  callbacks: {
+    // This adds the userId to the session data so we can use it on client (useSession) and server (getServerSession)
+    session: async ({ session }) => {
+      const user = await prisma.user.findUnique({
+        where: { email: session?.user?.email ?? undefined },
+      });
+      if (user?.id) {
+        session.role = user?.role;
+      }
+      return session;
+    },
+    // This adds the user's role to the token data so we can use it in middleware
+    jwt: async ({ token, user }) => {
+      if ("role" in user && user?.role) {
+        token.role = user.role;
+      }
+
+      return token;
+    },
   },
 };
 
