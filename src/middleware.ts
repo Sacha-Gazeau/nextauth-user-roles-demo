@@ -15,6 +15,7 @@ export default withAuth(
         return NextResponse.redirect(new URL("/api/auth/error", req.url));
       }
     }
+    return NextResponse.redirect(new URL("/api/auth/signin", req.url));
   }
 );
 

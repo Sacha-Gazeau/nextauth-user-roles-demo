@@ -16,10 +16,10 @@ model User {
   email          String  @unique
   name           String?
   hashedPassword String
-  role           Role
+  role           Roles
 }
 
-enum Role {
+enum Roles {
   USER
   ADMIN
 }
